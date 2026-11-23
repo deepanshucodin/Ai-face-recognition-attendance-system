@@ -1,0 +1,10 @@
+{% extends "layout/base.html" %}
+{% block title %}{{ code }} Error{% endblock %}
+{% block page_title %}{{ code }}{% endblock %}
+{% block content %}
+<section class="empty-state">
+    <i class="fa-solid fa-triangle-exclamation"></i>
+    <h2>{{ message }}</h2>
+    <a class="btn btn-primary" href="{{ url_for('dashboard.index') }}">Go to Dashboard</a>
+</section>
+{% endblock %}

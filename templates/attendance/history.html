@@ -1,0 +1,35 @@
+{% extends "layout/base.html" %}
+{% block title %}Attendance History | AI Attendance{% endblock %}
+{% block page_title %}Attendance History{% endblock %}
+{% block content %}
+<section class="panel">
+    <form class="row g-3 align-items-end mb-3" method="get">
+        <div class="col-md-4"><label class="form-label">Date</label><input class="form-control" type="date" name="date" value="{{ selected_date }}"></div>
+        <div class="col-md-5"><label class="form-label">Search</label><input class="form-control" name="search" value="{{ search }}" placeholder="Name or roll number"></div>
+        <div class="col-md-3"><button class="btn btn-primary w-100" type="submit"><i class="fa-solid fa-filter"></i> Filter</button></div>
+    </form>
+    <div class="table-responsive">
+        <table class="table align-middle">
+            <thead><tr><th>Roll No</th><th>Name</th><th>Date</th><th>Time</th><th>Status</th><th>Method</th><th></th></tr></thead>
+            <tbody>
+            {% for record in records.items %}
+                <tr>
+                    <td>{{ record.student.roll_number }}</td><td>{{ record.student.full_name }}</td><td>{{ record.date }}</td><td>{{ record.time.strftime("%H:%M:%S") }}</td>
+                    <td><span class="badge text-bg-{{ 'success' if record.status == 'PRESENT' else 'danger' }}">{{ record.status }}</span></td><td>{{ record.method }}</td>
+                    <td><form method="post" action="{{ url_for('attendance.delete_record', record_id=record.id) }}" class="confirm-form"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn btn-sm btn-outline-danger"><i class="fa-solid fa-trash"></i></button></form></td>
+                </tr>
+            {% else %}
+                <tr><td colspan="7" class="text-muted">No records found.</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <nav>
+        <ul class="pagination">
+            {% if records.has_prev %}<li class="page-item"><a class="page-link" href="{{ url_for('attendance.history', page=records.prev_num, date=selected_date, search=search) }}">Previous</a></li>{% endif %}
+            <li class="page-item active"><span class="page-link">{{ records.page }}</span></li>
+            {% if records.has_next %}<li class="page-item"><a class="page-link" href="{{ url_for('attendance.history', page=records.next_num, date=selected_date, search=search) }}">Next</a></li>{% endif %}
+        </ul>
+    </nav>
+</section>
+{% endblock %}

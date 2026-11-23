@@ -1,0 +1,138 @@
+{% extends "layout/base.html" %}
+{% block title %}System Settings | Vision ID{% endblock %}
+{% block page_title %}System Settings{% endblock %}
+{% block page_subtitle %}Configure face detection accuracy algorithms, automated email warning SMTP, and administration{% endblock %}
+
+{% block content %}
+<section class="content-grid">
+    <!-- Face Recognition Accuracy Tuning -->
+    <div class="panel">
+        <div class="panel-header">
+            <h2><i class="fa-solid fa-sliders text-primary me-2"></i> Face Recognition & Detection Tuning</h2>
+        </div>
+        <form method="post">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="action" value="face_settings">
+
+            <div class="mb-3">
+                <label class="form-label fw-semibold">Face Matching Tolerance</label>
+                <input class="form-control" name="face_tolerance" type="number" min="0.30" max="0.65" step="0.01" value="{{ config.FACE_TOLERANCE }}">
+                <div class="form-text">Lower is stricter (e.g. 0.40 - 0.44 for minimal false positives). Higher (0.48 - 0.52) is more lenient. Recommended: <strong>0.44</strong> with CLAHE enabled.</div>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label fw-semibold">Pyramidal Upsampling Factor (Classroom Distance Shots)</label>
+                <select class="form-select" name="face_upsample_times">
+                    <option value="0" {% if config.FACE_UPSAMPLE_TIMES == 0 %}selected{% endif %}>0x (Fastest, Frontal close-up only)</option>
+                    <option value="1" {% if config.FACE_UPSAMPLE_TIMES == 1 %}selected{% endif %}>1x (Recommended - Detects small faces in rows 2-4)</option>
+                    <option value="2" {% if config.FACE_UPSAMPLE_TIMES == 2 %}selected{% endif %}>2x (Deep search for large auditorium / distant crowds)</option>
+                </select>
+                <div class="form-text">Upsampling scales the image pyramid to catch smaller, distant student faces.</div>
+            </div>
+
+            <div class="form-check form-switch mb-3">
+                <input class="form-check-input" type="checkbox" id="claheSwitch" name="enhance_contrast_clahe" {% if config.ENHANCE_CONTRAST_CLAHE %}checked{% endif %}>
+                <label class="form-check-label fw-semibold" for="claheSwitch">Enable CLAHE Illumination Normalization</label>
+                <div class="form-text">Balances light in dark or unevenly lit classrooms to prevent false rejections.</div>
+            </div>
+
+            <button class="btn btn-primary" type="submit">
+                <i class="fa-solid fa-check me-1"></i> Update Detection Parameters
+            </button>
+        </form>
+    </div>
+
+    <!-- Automated Email Warning SMTP Configuration -->
+    <div class="panel">
+        <div class="panel-header">
+            <h2><i class="fa-solid fa-envelope-gear text-primary me-2"></i> Automated &lt; 75% Email Alerts (SMTP)</h2>
+        </div>
+        <form method="post" class="mb-4">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="action" value="mail_settings">
+
+            <div class="row g-2 mb-2">
+                <div class="col-8">
+                    <label class="form-label small fw-semibold">SMTP Server</label>
+                    <input class="form-control form-control-sm" name="mail_server" value="{{ config.MAIL_SERVER }}" placeholder="smtp.gmail.com">
+                </div>
+                <div class="col-4">
+                    <label class="form-label small fw-semibold">Port</label>
+                    <input class="form-control form-control-sm" name="mail_port" type="number" value="{{ config.MAIL_PORT }}" placeholder="587">
+                </div>
+            </div>
+
+            <div class="mb-2">
+                <label class="form-label small fw-semibold">SMTP Username / Email</label>
+                <input class="form-control form-control-sm" name="mail_username" value="{{ config.MAIL_USERNAME }}" placeholder="academic-alerts@gmail.com">
+            </div>
+
+            <div class="mb-2">
+                <label class="form-label small fw-semibold">SMTP Password / App Password</label>
+                <input class="form-control form-control-sm" name="mail_password" type="password" placeholder="••••••••••••">
+                <div class="form-text small">For Gmail, generate an App Password from your Google Account settings.</div>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label small fw-semibold">Default Sender Address</label>
+                <input class="form-control form-control-sm" name="mail_default_sender" value="{{ config.MAIL_DEFAULT_SENDER }}" placeholder="noreply@university.edu">
+            </div>
+
+            <button class="btn btn-sm btn-primary" type="submit">
+                <i class="fa-solid fa-floppy-disk me-1"></i> Save SMTP Settings
+            </button>
+        </form>
+
+        <!-- Send Test Email -->
+        <hr>
+        <h3 class="fs-6 fw-bold mb-2"><i class="fa-solid fa-paper-plane text-secondary me-1"></i> Send Test Warning Notification</h3>
+        <form method="post" class="d-flex gap-2">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="action" value="test_email">
+            <input class="form-control form-control-sm" name="test_email_target" type="email" placeholder="recipient@example.com" required>
+            <button class="btn btn-sm btn-outline-primary text-nowrap" type="submit">Test Dispatch</button>
+        </form>
+    </div>
+</section>
+
+<!-- Admin Accounts Management -->
+<section class="panel mt-4">
+    <div class="panel-header">
+        <h2><i class="fa-solid fa-users-gear text-primary me-2"></i> Faculty & Admin Accounts</h2>
+    </div>
+    <div class="row g-4">
+        <div class="col-md-5">
+            <form method="post">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="action" value="create_admin">
+
+                <div class="mb-2">
+                    <label class="form-label small fw-semibold">New Admin Username</label>
+                    <input class="form-control" name="new_username" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label small fw-semibold">New Password</label>
+                    <input class="form-control" name="new_password" type="password" required>
+                </div>
+                <button class="btn btn-outline-primary" type="submit">
+                    <i class="fa-solid fa-user-plus me-1"></i> Create Administrator Account
+                </button>
+            </form>
+        </div>
+        <div class="col-md-7">
+            <h3 class="fs-6 fw-bold mb-2">Existing Administrators:</h3>
+            <ul class="list-group">
+                {% for admin in admins %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <i class="fa-solid fa-user-shield text-primary me-2"></i>
+                            <strong>{{ admin.username }}</strong>
+                        </div>
+                        <span class="badge bg-light text-muted border">Created: {{ admin.created_at.strftime("%b %d, %Y") }}</span>
+                    </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+</section>
+{% endblock %}

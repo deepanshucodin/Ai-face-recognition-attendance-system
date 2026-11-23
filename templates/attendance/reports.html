@@ -1,0 +1,13 @@
+{% extends "layout/base.html" %}
+{% block title %}Reports | AI Attendance{% endblock %}
+{% block page_title %}Export Reports{% endblock %}
+{% block content %}
+<section class="panel">
+    <form class="row g-3 align-items-end" id="reportForm">
+        <div class="col-md-4"><label class="form-label">Start Date</label><input class="form-control" type="date" name="start_date"></div>
+        <div class="col-md-4"><label class="form-label">End Date</label><input class="form-control" type="date" name="end_date"></div>
+        <div class="col-md-2"><button class="btn btn-success w-100 export-btn" data-format="excel" type="button"><i class="fa-solid fa-file-excel"></i> Excel</button></div>
+        <div class="col-md-2"><button class="btn btn-outline-primary w-100 export-btn" data-format="csv" type="button"><i class="fa-solid fa-file-csv"></i> CSV</button></div>
+    </form>
+</section>
+{% endblock %}

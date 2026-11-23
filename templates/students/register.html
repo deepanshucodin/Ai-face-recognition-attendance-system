@@ -1,0 +1,97 @@
+{% extends "layout/base.html" %}
+{% block title %}Register Student | AI Attendance{% endblock %}
+{% block page_title %}Register Student{% endblock %}
+{% block page_subtitle %}Add a new student with facial biometric profiles and automated alert routing{% endblock %}
+
+{% block content %}
+<section class="panel">
+    <div class="panel-header mb-4">
+        <div>
+            <h2><i class="fa-solid fa-user-plus text-primary me-2"></i> Student Biometric Registration</h2>
+            <p class="text-muted small mb-0">Provide student demographic details, contact email for attendance alerts, and facial samples.</p>
+        </div>
+    </div>
+
+    <form method="post" enctype="multipart/form-data" class="row g-4">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <div class="col-md-6">
+            <label class="form-label fw-semibold">Full Name <span class="text-danger">*</span></label>
+            <div class="input-group">
+                <span class="input-group-text"><i class="fa-solid fa-user"></i></span>
+                <input class="form-control" name="full_name" placeholder="e.g. John Doe" required>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <label class="form-label fw-semibold">Roll Number <span class="text-danger">*</span></label>
+            <div class="input-group">
+                <span class="input-group-text"><i class="fa-solid fa-id-card"></i></span>
+                <input class="form-control" name="roll_number" placeholder="e.g. CS202401" required>
+            </div>
+            <div class="form-text">Unique academic roll/registration number used for identification.</div>
+        </div>
+
+        <div class="col-md-6">
+            <label class="form-label fw-semibold">Student Email Address <span class="text-primary">*</span></label>
+            <div class="input-group">
+                <span class="input-group-text"><i class="fa-solid fa-envelope"></i></span>
+                <input class="form-control" type="email" name="email" placeholder="student@university.edu" required>
+            </div>
+            <div class="form-text text-primary"><i class="fa-solid fa-circle-check me-1"></i> Required for sending automated warning emails when attendance falls below 75%.</div>
+        </div>
+
+        <div class="col-md-6">
+            <label class="form-label fw-semibold">Student Portal Password <span class="text-muted small">(Optional)</span></label>
+            <div class="input-group">
+                <span class="input-group-text"><i class="fa-solid fa-key"></i></span>
+                <input class="form-control" type="password" name="password" placeholder="Leave blank to default to Roll Number">
+            </div>
+            <div class="form-text">Password for student self-service attendance dashboard.</div>
+        </div>
+
+        <div class="col-md-6">
+            <label class="form-label fw-semibold">Department <span class="text-danger">*</span></label>
+            <div class="input-group">
+                <span class="input-group-text"><i class="fa-solid fa-building-columns"></i></span>
+                <input class="form-control" name="department" placeholder="e.g. Computer Science & Engineering" required>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <label class="form-label fw-semibold">Year / Semester <span class="text-danger">*</span></label>
+            <div class="input-group">
+                <span class="input-group-text"><i class="fa-solid fa-calendar-days"></i></span>
+                <input class="form-control" name="year_semester" placeholder="e.g. 3rd Year / Semester 5" required>
+            </div>
+        </div>
+
+        <!-- Facial Photo Upload with High-Accuracy Tips -->
+        <div class="col-12">
+            <div class="card border-primary-subtle bg-primary-subtle bg-opacity-10 p-3 mb-2">
+                <div class="d-flex gap-2">
+                    <i class="fa-solid fa-wand-magic-sparkles text-primary fa-lg mt-1"></i>
+                    <div>
+                        <strong>Accuracy Recommendation:</strong>
+                        <p class="mb-0 small text-muted">
+                            For best 95%+ detection in classroom crowd photos, upload <strong>2 to 4 facial images</strong> of the student (e.g. direct frontal, slight left turn, slight right turn). The system extracts multi-angle encodings with CLAHE enhancement for maximum match precision.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <label class="form-label fw-semibold">Facial Images for Biometric Encodings <span class="text-danger">*</span></label>
+            <input class="form-control form-control-lg" type="file" id="imageInput" name="images" accept="image/*" multiple required>
+            <div class="form-text">Accepted formats: JPG, PNG, WEBP. Ensure the face is clearly visible without heavy sunglasses or obstructions.</div>
+            <div id="previewGrid" class="preview-grid mt-3"></div>
+        </div>
+
+        <div class="col-12 mt-4">
+            <button class="btn btn-primary btn-lg" type="submit">
+                <i class="fa-solid fa-brain me-1"></i> Register Student & Generate 128D Encodings
+            </button>
+            <a href="{{ url_for('students.list_students') }}" class="btn btn-outline-secondary btn-lg ms-2">Cancel</a>
+        </div>
+    </form>
+</section>
+{% endblock %}

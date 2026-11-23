@@ -1,0 +1,108 @@
+{% extends "layout/base.html" %}
+{% block title %}Take Attendance | Vision ID{% endblock %}
+{% block page_title %}Biometric Attendance Capture{% endblock %}
+{% block page_subtitle %}Process classroom crowd photos or live webcam feed with multi-scale detection & automated alert routing{% endblock %}
+
+{% block content %}
+<section class="attendance-grid">
+    <!-- Upload Classroom Image -->
+    <div class="panel">
+        <div class="panel-header">
+            <h2><i class="fa-solid fa-cloud-arrow-up text-primary me-2"></i> Upload Classroom Photo</h2>
+        </div>
+        <form method="post" action="{{ url_for('attendance.take') }}" enctype="multipart/form-data">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <p class="text-muted small">Upload wide classroom photo or group shot. Preprocessed with CLAHE and pyramidal upsampling for back rows.</p>
+            <input class="form-control" type="file" id="singleImageInput" name="classroom_image" accept="image/*" required>
+            <img id="singlePreview" class="image-preview mt-3 d-none" alt="Selected classroom image">
+            <button class="btn btn-primary mt-3 w-100" type="submit">
+                <i class="fa-solid fa-wand-magic-sparkles me-1"></i> Process High-Accuracy Attendance
+            </button>
+        </form>
+    </div>
+
+    <!-- Live Webcam -->
+    <div class="panel">
+        <div class="panel-header d-flex justify-content-between align-items-center">
+            <h2><i class="fa-solid fa-camera-retro text-primary me-2"></i> Live Video & Webcam</h2>
+            <div class="form-check form-switch mb-0">
+                <input class="form-check-input" type="checkbox" id="autoScanToggle" role="switch">
+                <label class="form-check-label small fw-semibold" for="autoScanToggle"><i class="fa-solid fa-bolt me-1 text-warning"></i> Auto-Scan</label>
+            </div>
+        </div>
+        <div class="position-relative">
+            <video id="webcamVideo" class="webcam" autoplay playsinline muted></video>
+            <canvas id="webcamCanvas" class="d-none"></canvas>
+        </div>
+        <div class="d-flex gap-2 mt-3">
+            <button class="btn btn-outline-primary w-50" id="startCamera" type="button"><i class="fa-solid fa-video me-1"></i> Start Camera</button>
+            <button class="btn btn-primary w-50" id="captureAttendance" type="button"><i class="fa-solid fa-camera me-1"></i> Capture & Mark</button>
+        </div>
+        <div id="webcamResult" class="mt-3"></div>
+    </div>
+</section>
+
+{% if result %}
+<section class="panel mt-4">
+    <div class="panel-header d-flex justify-content-between align-items-center">
+        <h2><i class="fa-solid fa-square-poll-vertical text-success me-2"></i> Verification & Attendance Results</h2>
+        <span class="badge bg-success-subtle text-success border">Session Complete</span>
+    </div>
+
+    <div class="summary-row">
+        <span><i class="fa-solid fa-user-group me-1 text-primary"></i> Faces Detected: <strong>{{ result.summary.get('faces_detected', 0) if result.summary is mapping else result.summary.faces_detected }}</strong></span>
+        <span><i class="fa-solid fa-circle-check me-1 text-success"></i> Recognized: <strong>{{ result.summary.get('recognized_count', 0) if result.summary is mapping else result.summary.recognized_count }}</strong></span>
+        <span><i class="fa-solid fa-circle-question me-1 text-warning"></i> Unidentified: <strong>{{ result.summary.get('unknown_count', 0) if result.summary is mapping else result.summary.unknown_count }}</strong></span>
+        <span><i class="fa-solid fa-circle-xmark me-1 text-danger"></i> Absent: <strong>{{ result.summary.get('absent_count', 0) if result.summary is mapping else result.summary.absent_count }}</strong></span>
+        {% if (result.summary.get('alerts_triggered', 0) if result.summary is mapping else result.summary.alerts_triggered) > 0 %}
+        <span class="bg-danger-subtle text-danger border border-danger">
+            <i class="fa-solid fa-triangle-exclamation me-1"></i> Low Attendance Alerts: <strong>{{ result.summary.get('alerts_triggered', 0) if result.summary is mapping else result.summary.alerts_triggered }}</strong>
+        </span>
+        {% endif %}
+    </div>
+
+    {% if result.processed_image %}
+        <div class="mb-4 text-center">
+            <img class="processed-image shadow-sm" src="{{ url_for('static', filename=result.processed_image) }}" alt="Processed attendance image">
+            <small class="text-muted d-block mt-2">Annotated image saved with facial bounding boxes and confidence scores.</small>
+        </div>
+    {% endif %}
+
+    <div class="table-responsive mt-3">
+        <table class="table table-hover align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>Roll No</th>
+                    <th>Student Name</th>
+                    <th>Match Confidence</th>
+                    <th>Attendance Status</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for student in result.recognized %}
+                <tr>
+                    <td><span class="badge bg-secondary-subtle text-secondary border fw-bold">{{ student.roll_number }}</span></td>
+                    <td class="fw-semibold">{{ student.name }}</td>
+                    <td>
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="badge bg-success-subtle text-success fs-6">{{ student.confidence }}%</span>
+                            <div class="progress flex-grow-1" style="height: 6px; max-width: 100px;">
+                                <div class="progress-bar bg-success" role="progressbar" style="width: {{ student.confidence }}%;" aria-valuenow="{{ student.confidence }}" aria-valuemin="0" aria-valuemax="100"></div>
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        <span class="badge bg-success px-3 py-1">
+                            <i class="fa-solid fa-check me-1"></i> Marked Present
+                        </span>
+                    </td>
+                </tr>
+            {% else %}
+                <tr><td colspan="4" class="text-muted text-center py-3">No registered students recognized in this capture.</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,180 @@
+{% extends "layout/base.html" %}
+{% block title %}Dashboard | Vision ID{% endblock %}
+{% block page_title %}Academic Dashboard{% endblock %}
+{% block page_subtitle %}Real-time attendance intelligence, face recognition status, and automated warning monitors{% endblock %}
+
+{% block content %}
+<section class="stats-grid">
+    <div class="stat-card">
+        <i class="fa-solid fa-users"></i>
+        <span>Enrolled Students</span>
+        <strong>{{ total_students }}</strong>
+    </div>
+    <div class="stat-card success">
+        <i class="fa-solid fa-circle-check"></i>
+        <span>Present Today</span>
+        <strong>{{ present_today }}</strong>
+    </div>
+    <div class="stat-card danger">
+        <i class="fa-solid fa-circle-xmark"></i>
+        <span>Absent Today</span>
+        <strong>{{ absent_today }}</strong>
+    </div>
+    <div class="stat-card {% if defaulters_count > 0 %}danger{% else %}info{% endif %}">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+        <span>&lt; 75% Defaulters</span>
+        <strong>{{ defaulters_count }}</strong>
+        {% if defaulters_count > 0 %}
+        <form method="post" action="{{ url_for('dashboard.send_batch_alerts') }}" class="mt-1">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn btn-danger btn-sm w-100" title="Dispatch warning emails to all students below 75%">
+                <i class="fa-solid fa-paper-plane me-1"></i> Email Warnings
+            </button>
+        </form>
+        {% endif %}
+    </div>
+</section>
+
+<!-- Defaulters Urgent Action Banner -->
+{% if defaulters_count > 0 %}
+<div class="alert alert-danger d-flex justify-content-between align-items-center mt-4 p-3 border-danger shadow-sm">
+    <div class="d-flex align-items-center gap-3">
+        <i class="fa-solid fa-bell fa-2x text-danger"></i>
+        <div>
+            <h5 class="alert-heading mb-1 fw-bold">{{ defaulters_count }} Student(s) Below 75% Attendance Threshold</h5>
+            <p class="mb-0 small">These students are at risk of exam debarment. Automated warnings are dispatched on recognition, or you can trigger a manual batch audit.</p>
+        </div>
+    </div>
+    <form method="post" action="{{ url_for('dashboard.send_batch_alerts') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="btn btn-danger btn-sm text-nowrap">
+            <i class="fa-solid fa-envelope-circle-check me-1"></i> Send Batch Warning Emails
+        </button>
+    </form>
+</div>
+{% endif %}
+
+<section class="content-grid mt-4">
+    <!-- Chart Overview -->
+    <div class="panel">
+        <div class="panel-header">
+            <h2><i class="fa-solid fa-chart-pie text-primary me-2"></i> Attendance Distribution</h2>
+        </div>
+        <canvas id="attendanceChart" height="210" data-labels='{{ chart_labels|tojson }}' data-values='{{ chart_data|tojson }}'></canvas>
+    </div>
+
+    <!-- Recent Attendance Log -->
+    <div class="panel">
+        <div class="panel-header">
+            <h2><i class="fa-solid fa-clock-rotate-left text-primary me-2"></i> Recent Attendance</h2>
+            <a href="{{ url_for('attendance.history') }}" class="btn btn-sm btn-outline-secondary">View all</a>
+        </div>
+        <div class="table-responsive">
+            <table class="table align-middle table-hover">
+                <thead class="table-light">
+                    <tr><th>Student</th><th>Date & Time</th><th>Status</th></tr>
+                </thead>
+                <tbody>
+                {% for record in recent_records %}
+                    <tr>
+                        <td>
+                            <strong>{{ record.student.full_name }}</strong>
+                            <small class="text-muted d-block">{{ record.student.roll_number }}</small>
+                        </td>
+                        <td>{{ record.date }} {{ record.time.strftime("%H:%M") }}</td>
+                        <td>
+                            <span class="badge text-bg-{{ 'success' if record.status == 'PRESENT' else 'danger' }}">
+                                {{ record.status }}
+                            </span>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr><td colspan="3" class="text-muted text-center py-4">No attendance records logged yet.</td></tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+
+<!-- Low Attendance Defaulters List & Alert Logs -->
+<section class="content-grid mt-4">
+    <!-- Defaulters Table -->
+    <div class="panel">
+        <div class="panel-header">
+            <h2><i class="fa-solid fa-user-xmark text-danger me-2"></i> At-Risk Students (&lt; 75%)</h2>
+            <span class="badge bg-danger-subtle text-danger">{{ defaulters|length }} Student(s)</span>
+        </div>
+        <div class="table-responsive">
+            <table class="table align-middle table-sm">
+                <thead>
+                    <tr><th>Roll No</th><th>Name</th><th>Attendance</th><th>Action</th></tr>
+                </thead>
+                <tbody>
+                {% for s in defaulters %}
+                    <tr>
+                        <td class="fw-bold">{{ s.roll_number }}</td>
+                        <td>{{ s.full_name }}</td>
+                        <td>
+                            <span class="badge bg-danger fs-6">{{ s.attendance_percentage }}%</span>
+                        </td>
+                        <td>
+                            {% if s.email %}
+                            <form method="post" action="{{ url_for('students.send_warning', student_id=s.id) }}" class="d-inline">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="btn btn-xs btn-outline-danger" title="Send email notice">
+                                    <i class="fa-solid fa-envelope"></i> Warn
+                                </button>
+                            </form>
+                            {% else %}
+                            <span class="text-muted small">No email</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr><td colspan="4" class="text-success text-center py-3"><i class="fa-solid fa-check-circle me-1"></i> All active students are above 75%!</td></tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Recent Warning Emails Dispatched -->
+    <div class="panel">
+        <div class="panel-header">
+            <h2><i class="fa-solid fa-envelope-open-text text-warning me-2"></i> Recent Warning Email Dispatches</h2>
+            <span class="badge bg-light text-muted border">Audit Trail</span>
+        </div>
+        <div class="table-responsive">
+            <table class="table align-middle table-sm">
+                <thead>
+                    <tr><th>Student</th><th>Percentage</th><th>Status</th><th>Time</th></tr>
+                </thead>
+                <tbody>
+                {% for a in recent_alerts %}
+                    <tr>
+                        <td>
+                            <strong>{{ a.student.full_name if a.student else 'Unknown' }}</strong>
+                            <small class="text-muted d-block">{{ a.recipient_email }}</small>
+                        </td>
+                        <td><span class="badge bg-danger-subtle text-danger">{{ a.attendance_percentage }}%</span></td>
+                        <td>
+                            {% if a.status == 'SENT' %}
+                                <span class="badge bg-success-subtle text-success"><i class="fa-solid fa-check me-1"></i> Sent</span>
+                            {% elif a.status == 'SIMULATED' %}
+                                <span class="badge bg-info-subtle text-info"><i class="fa-solid fa-file-lines me-1"></i> Logged</span>
+                            {% else %}
+                                <span class="badge bg-danger-subtle text-danger"><i class="fa-solid fa-circle-xmark me-1"></i> Failed</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-muted small">{{ a.sent_at.strftime('%b %d, %H:%M') }}</td>
+                    </tr>
+                {% else %}
+                    <tr><td colspan="4" class="text-muted text-center py-3">No warning emails dispatched yet.</td></tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+{% endblock %}
