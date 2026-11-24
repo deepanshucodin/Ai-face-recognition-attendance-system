@@ -4,10 +4,11 @@ from pathlib import Path
 
 from flask import Flask, render_template
 
-# Ensure local packages directory is recognized
-packages_path = Path(__file__).resolve().parent / "packages"
-if packages_path.exists() and str(packages_path) not in sys.path:
-    sys.path.insert(0, str(packages_path))
+# Ensure local packages directory is recognized on Windows only
+if sys.platform == "win32":
+    packages_path = Path(__file__).resolve().parent / "packages"
+    if packages_path.exists() and str(packages_path) not in sys.path:
+        sys.path.insert(0, str(packages_path))
 
 from config import Config
 from extensions import csrf, db
@@ -43,8 +44,11 @@ def create_app(config_class=Config):
     register_error_handlers(app)
 
     with app.app_context():
-        db.create_all()
-        seed_admin()
+        try:
+            db.create_all()
+            seed_admin()
+        except Exception as exc:
+            app.logger.warning(f"Database setup note: {exc}")
 
     return app
 

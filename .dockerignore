@@ -1,0 +1,13 @@
+packages/
+.git/
+.env
+.env.*
+database.db
+logs/
+exports/*.csv
+exports/*.xlsx
+static/uploads/*
+static/processed/*
+__pycache__/
+*.pyc
+*.pyo
