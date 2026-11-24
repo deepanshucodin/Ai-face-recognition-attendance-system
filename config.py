@@ -10,10 +10,12 @@ load_dotenv(BASE_DIR / ".env")
 class Config:
     SECRET_KEY = os.getenv("SECRET_KEY", "faceattend-secret-key-super-secure-production-ready")
     
-    # Database URL with automatic fix for Render/Heroku postgres:// schema and Neon parameters
+    # Database URL with automatic fix for Render/Heroku/Neon schema
     _db_url = os.getenv("DATABASE_URL", f"sqlite:///{BASE_DIR / 'database.db'}")
     if _db_url.startswith("postgres://"):
-        _db_url = _db_url.replace("postgres://", "postgresql://", 1)
+        _db_url = _db_url.replace("postgres://", "postgresql+psycopg2://", 1)
+    elif _db_url.startswith("postgresql://") and not _db_url.startswith("postgresql+"):
+        _db_url = _db_url.replace("postgresql://", "postgresql+psycopg2://", 1)
     _db_url = _db_url.replace("&channel_binding=require", "").replace("?channel_binding=require&", "?")
     if _db_url.endswith("?channel_binding=require"):
         _db_url = _db_url[:-25]
