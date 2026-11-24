@@ -9,7 +9,12 @@ load_dotenv(BASE_DIR / ".env")
 
 class Config:
     SECRET_KEY = os.getenv("SECRET_KEY", "faceattend-secret-key-super-secure-production-ready")
-    SQLALCHEMY_DATABASE_URI = os.getenv("DATABASE_URL", f"sqlite:///{BASE_DIR / 'database.db'}")
+    
+    # Database URL with automatic fix for Render/Heroku postgres:// schema
+    _db_url = os.getenv("DATABASE_URL", f"sqlite:///{BASE_DIR / 'database.db'}")
+    if _db_url.startswith("postgres://"):
+        _db_url = _db_url.replace("postgres://", "postgresql://", 1)
+    SQLALCHEMY_DATABASE_URI = _db_url
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     # Directories
